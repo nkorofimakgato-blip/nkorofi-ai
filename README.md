@@ -6,7 +6,7 @@ A public-facing AI assistant that answers questions about Nkorofi Makgato — hi
 
 
 
-\*\* Live demo:\*\* https://nkorofi-ai.vercel.app
+https://nkorofi-da32ydm4r-nkorofimakgato-blip.vercel.app/
 
 
 
