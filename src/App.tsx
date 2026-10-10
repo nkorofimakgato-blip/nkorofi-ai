@@ -20,7 +20,7 @@ export default function App() {
           <h2 className="font-bold mb-3">How it works</h2>
           <ul className="text-sm text-gray-400 space-y-2">
             <li>• Built with React, TypeScript, and Tailwind CSS</li>
-            <li>• Powered by Llama 3.3 70B via Groq (fast + free)</li>
+            <li>• Powered by GPT-OSS 120B via Groq (fast + free)</li>
             <li>• Streams tokens in real time as the AI responds</li>
             <li>• Answers grounded in a knowledge file — cannot invent facts</li>
             <li>• API key stays server-side via a Vercel Function</li>
