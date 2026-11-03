@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { streamChat, type ChatMessage } from '../api/chat'
+import Companion, { type CompanionMood } from './Companion'
+import './ChatWidget.css'
 import Message from './Message'
 
 const STARTER_PROMPTS = [
@@ -9,39 +11,56 @@ const STARTER_PROMPTS = [
   { icon: '📩', text: 'Is he available for hire?' },
 ]
 
-function RobotIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="8" width="18" height="12" rx="3" />
-      <circle cx="9" cy="14" r="1.5" fill="currentColor" />
-      <circle cx="15" cy="14" r="1.5" fill="currentColor" />
-      <path d="M12 8V5" />
-      <circle cx="12" cy="3.5" r="1.5" fill="currentColor" />
-    </svg>
-  )
-}
-
 export default function ChatWidget() {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [ambientMood, setAmbientMood] = useState<CompanionMood>('idle')
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const moodTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, streaming])
+
+  useEffect(() => {
+    function reactToPage(event: Event) {
+      const target = event.target
+      if (target instanceof Element && target.closest('[data-assistant-widget]')) return
+
+      let mood: CompanionMood | null = null
+      if (event.type === 'scroll') {
+        mood = 'curious'
+      } else if (target instanceof Element) {
+        const interactive = target.closest('a, button, input, textarea, select, [role="button"]')
+        if (event.type === 'click' && interactive) mood = 'happy'
+        else if (event.type === 'pointerover' && interactive) mood = 'curious'
+        else if (event.type === 'focusin' && interactive) mood = 'curious'
+      }
+
+      if (!mood) return
+      setAmbientMood(mood)
+      if (moodTimeoutRef.current !== null) window.clearTimeout(moodTimeoutRef.current)
+      moodTimeoutRef.current = window.setTimeout(() => setAmbientMood('idle'), 1300)
+    }
+
+    document.addEventListener('pointerover', reactToPage, true)
+    document.addEventListener('click', reactToPage, true)
+    document.addEventListener('focusin', reactToPage, true)
+    window.addEventListener('scroll', reactToPage, { passive: true })
+
+    return () => {
+      document.removeEventListener('pointerover', reactToPage, true)
+      document.removeEventListener('click', reactToPage, true)
+      document.removeEventListener('focusin', reactToPage, true)
+      window.removeEventListener('scroll', reactToPage)
+      if (moodTimeoutRef.current !== null) window.clearTimeout(moodTimeoutRef.current)
+    }
+  }, [])
 
   async function send(text: string) {
     const trimmed = text.trim()
@@ -93,8 +112,10 @@ export default function ChatWidget() {
   // The button is always rendered on top at the bottom-right, and only
   // its position/size changes when the panel opens. This avoids the icon
   // flicker entirely.
+  const panelMood: CompanionMood = streaming ? 'thinking' : input.trim() ? 'curious' : 'idle'
+
   return (
-    <>
+    <div data-assistant-widget className="assistant-widget-root">
       {/* Backdrop */}
       {open && (
         <div
@@ -104,25 +125,23 @@ export default function ChatWidget() {
       )}
 
       {/* CLOSED BUTTON — a standalone, always-visible element */}
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Open chat"
-        className={`
-          fixed bottom-6 right-6 z-50
-          w-16 h-16 rounded-2xl
-          bg-gradient-to-br from-cyan-400 to-cyan-600
-          shadow-xl shadow-cyan-500/40
-          flex items-center justify-center
-          transition-all duration-300
-          ${open
-            ? 'opacity-0 scale-90 pointer-events-none'
-            : 'opacity-100 scale-100 hover:scale-105 hover:shadow-cyan-500/60'
-          }
-        `}
-      >
-        <RobotIcon className="w-8 h-8 text-black" />
-        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-400 border-2 border-gray-950 animate-pulse" />
-      </button>
+      <div className={`chat-launcher-wrap fixed bottom-5 right-5 z-50 ${open ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'}`}>
+        {!open && (
+          <div className="companion-nudge" aria-hidden="true">
+            <span className="companion-nudge__dot" />
+            <span>Move your cursor</span>
+            <span className="companion-nudge__hint">I&apos;ll look around.</span>
+          </div>
+        )}
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Open chat with Nkorofi AI"
+          className="chat-launcher"
+        >
+          <Companion mood={ambientMood} size="launcher" />
+          <span className="chat-launcher__online" aria-hidden="true" />
+        </button>
+      </div>
 
       {/* OPEN PANEL — a separate element that appears when needed */}
       <div
@@ -142,11 +161,9 @@ export default function ChatWidget() {
       >
         {/* Header */}
         <div className="relative flex items-center gap-3 px-5 py-4 border-b border-gray-800/80 bg-gradient-to-r from-gray-900 to-gray-900/50 flex-shrink-0">
-          <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-              <RobotIcon className="w-5 h-5 text-black" />
-            </div>
-            <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-400 border-2 border-gray-900" />
+          <div className="chat-header-avatar">
+            <Companion mood={panelMood} size="header" />
+            <span className="chat-header-avatar__online" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-sm text-white">Nkorofi AI</p>
@@ -169,9 +186,7 @@ export default function ChatWidget() {
           {messages.length === 0 && (
             <div className="space-y-6">
               <div className="flex gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-lg">
-                  <RobotIcon className="w-4 h-4 text-black" />
-                </div>
+                <Companion mood="happy" size="message" />
                 <div className="max-w-[85%] rounded-2xl rounded-tl-md px-4 py-3 text-sm leading-relaxed bg-gray-800/80 border border-gray-700/50 text-gray-100">
                   <p className="mb-1">
                     👋 Hi! I&apos;m{' '}
@@ -257,6 +272,6 @@ export default function ChatWidget() {
           </button>
         </form>
       </div>
-    </>
+    </div>
   )
 }

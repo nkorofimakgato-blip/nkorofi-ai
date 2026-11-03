@@ -1,3 +1,5 @@
+import Companion from './Companion'
+
 interface MessageProps {
   role: 'user' | 'assistant'
   content: string
@@ -15,15 +17,16 @@ export default function Message({ role, content, streaming }: MessageProps) {
       }`}
     >
       {/* Avatar */}
-      <div
-        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${
-          isUser
-            ? 'bg-gradient-to-br from-gray-600 to-gray-800 text-white'
-            : 'bg-gradient-to-br from-cyan-400 to-cyan-600 text-black'
-        }`}
-      >
-        {isUser ? 'You' : '🤖'}
-      </div>
+      {isUser ? (
+        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg bg-gradient-to-br from-gray-600 to-gray-800 text-white">
+          You
+        </div>
+      ) : (
+        <Companion
+          size="message"
+          mood={streaming ? (content ? 'talking' : 'thinking') : 'idle'}
+        />
+      )}
 
       {/* Bubble */}
       <div

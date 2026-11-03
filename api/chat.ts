@@ -23,7 +23,7 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Missing messages' })
   }
 
-  const trimmed = messages.slice(-12)
+  const trimmed = messages.slice(-16)
 
   try {
     const groqRes = await fetch(GROQ_URL, {
@@ -35,8 +35,8 @@ export default async function handler(req: any, res: any) {
       body: JSON.stringify({
         model: MODEL,
         stream: true,
-        temperature: 0.7,
-        max_tokens: 400,
+        temperature: 0.45,
+        max_tokens: 600,
         messages: [
           { role: 'system', content: system ?? 'You are a helpful assistant.' },
           ...trimmed,
