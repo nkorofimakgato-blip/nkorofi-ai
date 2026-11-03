@@ -112,6 +112,14 @@ product-focused engineer, and build software people genuinely enjoy using.`,
       codeUrl: 'https://github.com/nkorofimakgato-blip/clothing-store',
     },
     {
+      name: 'SiteAssist',
+      type: 'AI product',
+      summary:
+        'A reusable customer-support platform that connects multiple websites to one dashboard. It maps public pages and product feeds, answers from each site’s own content, manages promotions, and provides an embeddable chat widget.',
+      why: 'I wanted to build one support assistant that could plug into different websites and learn each site’s products and policies without rebuilding the AI for every store.',
+      tech: ['Node.js', 'JavaScript', 'Web crawling', 'OpenAI-compatible API', 'Docker'],
+    },
+    {
       name: 'Weather App',
       type: 'Web app',
       summary:
